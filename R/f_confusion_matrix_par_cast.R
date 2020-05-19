@@ -36,10 +36,16 @@ registerDoParallel(corz)
 # setting ss and tt for testing purposes
 SS<-5
 TT<-11
+
 library(foreach)
+library(doParallel)
+registerDoParallel(detectCores()-1)
+
 foreach(TT = time) %:% 
   foreach(SS = space)%dopar% {
+    
     bt_fn <- paste0("big_table_s", SS,"t",TT,".csv") 
+    if(!file.exists(bt_fn)){
 
 # 1. import files ==============================================================
     if(!exists("modis_full")){
@@ -124,7 +130,8 @@ foreach(TT = time) %:%
       write_csv(results, paste0("data/result_tables/",res_file))
       # system(paste0("aws s3 cp data/result_tables/",res_file," s3://earthlab-natem/modis-burned-area/MCD64A1/C6/result_tables_casted/",res_file))
       
-   }else{results <- read.csv(paste0("data/result_tables/",res_file), stringsAsFactors = FALSE)}
+    }else{
+     results <- read_csv(paste0("data/result_tables/",res_file))}
 
 # 2b. extracting mtbs info from modis polygons =================================
     
@@ -154,7 +161,8 @@ foreach(TT = time) %:%
        #               longfile,
        #               " s3://earthlab-natem/modis-burned-area/MCD64A1/C6/long_tables_casted/",
        #               longfile))
-    }else{long_mt_mo <- read.csv(paste0("data/long_tables/",longfile), stringsAsFactors = FALSE)}
+    }else{
+      long_mt_mo <- read_csv(paste0("data/long_tables/",longfile))}
 
      
 # 2c. applying the mtbs thresholds to the modis for comparison =================
@@ -204,6 +212,7 @@ foreach(TT = time) %:%
                              time = NA,
                              mtbs_IDs_of_max_modis = NA)
      
+     # this is a check on the number of rows
      rc <- table(results$n) %>% as_tibble(.name_repair = "unique")
      NN <- sum(rc$n[1:2])
      rc <- rc[3:nrow(rc),]
@@ -253,7 +262,8 @@ foreach(TT = time) %:%
      big_table[1,20] <- TT
      big_table[1,21] <- paste(as.character(dplyr::filter(long_mt_mo, modis_id == first(which2))$mtbs_cast_id),collapse = " ")
      
-     write.csv(big_table, paste0("data/",bt_fn))
+     write_csv(big_table, paste0("data/",bt_fn))
   
-}
+  } # ending if(!file.exists(bt_fn))
+}# ending nested foreach loop
 
