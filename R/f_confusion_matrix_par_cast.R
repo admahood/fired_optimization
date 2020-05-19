@@ -6,8 +6,9 @@
 # 1. break up mtbs multipolygons to eliminate the confounding effect of fire
 #    complexes sometimes being classified as multiple fires, and sometimes being
 #    grouped into a multipolygon
-# 2. extract stats on modis pixels that occur within each polygon. the idea is 
-#    seeing if one mtbs event corresponds to one modis event
+# 2a. how many modis events are happeing in each mtbs event
+# 2b. how many mtbs event ids occuring within each modis event
+# 2c. how mamny of these events are within the predefined mtbs thresholds
 
 
 
@@ -20,6 +21,9 @@ library(units)
 space <- 5 
 time <- 11
 
+e_th <- 202/21.4369 #thresholds in pixels (from hectares)
+w_th <- 404/21.4369
+
 years <- 2001:2017 # only up to 2015 because MTBS only goes that far
 
 
@@ -29,36 +33,21 @@ dir.create("data/result_tables/")
 corz = detectCores()-1
 registerDoParallel(corz)
 
-# 
-
-# system("aws s3 sync s3://earthlab-natem/modis-burned-area/MCD64A1/C6/result_tables_casted data/result_tables")
-# system("aws s3 sync s3://earthlab-natem/modis-burned-area/MCD64A1/C6/long_tables_casted data/long_tables")
-
-# getting state boundaries from us census stored on S3
-# system("aws s3 cp s3://earthlab-natem/data/raw/states/cb_2016_us_state_20m.zip data/states/states.zip")
-# unzip("data/states/states.zip", exdir="data/states/")
-
-# usa <- st_read(file.path("data/states/", "cb_2016_us_state_20m.shp"),
-#                quiet= TRUE) %>%
-#   filter(!(STUSPS %in% c("AK", "HI", "PR"))) %>%
-#   dplyr::select(STUSPS) %>%
-#   st_transform(p4string_ea)
-# names(usa) %>% tolower()
-
-# big parallel loop that does everything ---------------------------------------
-
 # setting ss and tt for testing purposes
 SS<-5
 TT<-11
 library(foreach)
-foreach(TT = time) %:% # this makes it do nested loops in parallel
+foreach(TT = time) %:% 
   foreach(SS = space)%dopar% {
-    
-    # import files =============================================================
+    bt_fn <- paste0("big_table_s", SS,"t",TT,".csv") 
+
+# 1. import files ==============================================================
+    if(!exists("modis_full")){
     modis_full <- read_csv("data/modis_events_alaska.csv") %>%
       mutate(year = as.numeric(substr(date, 1,4))) %>%
       distinct(x,y,id, .keep_all = T)%>%
       st_as_sf(coords = c("x","y"), crs = st_crs(proj_modis))
+    }
     
     if(!exists("mtbs")){ 
       mtbs <- mtbs_fire %>%
@@ -77,9 +66,7 @@ foreach(TT = time) %:% # this makes it do nested loops in parallel
       mtbs$cast_area_ac <- st_area(mtbs[0])%>% set_units(value = acre)
     }
     
-    # final result table filename
-    bt_fn <- paste0("big_table_s", SS,"t",TT,".csv") 
-    
+# 2a. extracting modis info from mtbs polygons ================================= 
     res_file <-paste0("mtbs_modis_ids_ba_cast_s",SS,"t",TT,".csv") 
     if(!file.exists(paste0("data/result_tables/",res_file))){ 
 
@@ -138,10 +125,8 @@ foreach(TT = time) %:% # this makes it do nested loops in parallel
       # system(paste0("aws s3 cp data/result_tables/",res_file," s3://earthlab-natem/modis-burned-area/MCD64A1/C6/result_tables_casted/",res_file))
       
    }else{results <- read.csv(paste0("data/result_tables/",res_file), stringsAsFactors = FALSE)}
-     # breaking it down to just mtbsIDs and modis IDs ------------------
-    # here, we're figuring it out from the other direction, how many modis 
-    # events don't have an mtbs ID, using the results table we just generated
-    # 
+
+# 2b. extracting mtbs info from modis polygons =================================
     
     longfile = paste0("long_cast_s",SS,"t",TT,".csv")
     if(!file.exists(paste0("data/long_tables/",longfile))){
@@ -170,11 +155,9 @@ foreach(TT = time) %:% # this makes it do nested loops in parallel
        #               " s3://earthlab-natem/modis-burned-area/MCD64A1/C6/long_tables_casted/",
        #               longfile))
     }else{long_mt_mo <- read.csv(paste0("data/long_tables/",longfile), stringsAsFactors = FALSE)}
-     # calculate modis id numbers -----------------------------------
-     e_th <- 202/21.4369 #thresholds in pixels (hectares)
-     w_th <- 404/21.4369
+
      
-     # this is calculating the area of each modis fire event
+# 2c. applying the mtbs thresholds to the modis for comparison =================
      m_ids <- data.frame(year = NA, n_ids = NA, n_over_th = NA)
      for(i in 1:length(years)){
        
@@ -196,7 +179,8 @@ foreach(TT = time) %:% # this makes it do nested loops in parallel
      }
      dir.create("data/m_ids/")
      write_csv(m_ids, paste0("data/m_ids/m_ids_s",SS,"t",TT,".csv"))
-     # big table time baby ----------------------------------
+
+# 3. Calculating segmentation indexes ==========================================
      
      big_table <- data.frame(modisT_mtbsT = NA,
                              modisF_mtbsT = NA,
@@ -269,31 +253,7 @@ foreach(TT = time) %:% # this makes it do nested loops in parallel
      big_table[1,20] <- TT
      big_table[1,21] <- paste(as.character(dplyr::filter(long_mt_mo, modis_id == first(which2))$mtbs_cast_id),collapse = " ")
      
-     
      write.csv(big_table, paste0("data/",bt_fn))
-     # system(paste0("aws s3 cp data/",bt_fn, 
-     #               " s3://earthlab-natem/modis-burned-area/MCD64A1/C6/final_tables_casted/",bt_fn))
-     # system(paste0("rm -r ",s3dir))
-  }
+  
 }
 
-
-# stiching together the final table ----------------------------------
-dir.create("data/final_tables")
-system("aws s3 sync s3://earthlab-natem/modis-burned-area/MCD64A1/C6/final_tables_casted data/final_tables")
-
-tables <- list.files("data/final_tables")
-table_l <- list()
-for(i in 1:length(tables)){
-  table_l[[i]] <- read.csv(paste0("data/final_tables/",tables[i]), stringsAsFactors = FALSE)
-}
-
-final_table <- do.call("rbind", table_l) %>% as_tibble()
-#final_table$modisF_mtbsT<-4223 #whatever... obtained from fixing_confusing_matrix.R
-#final_table <- final_table[,-c(1,7:12)]
-write.csv(final_table, "data/confusion_matrices.csv")
-system("aws s3 cp data/confusion_matrices.csv s3://earthlab-natem/modis-burned-area/MCD64A1/C6/confusion_matrix/confusion_matrices_casted.csv")
-
-
-
-# thanks https://gis.stackexchange.com/questions/255025/r-raster-masking-a-raster-by-polygon-also-remove-cells-partially-covered
