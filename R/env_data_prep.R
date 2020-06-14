@@ -7,8 +7,8 @@ lapply(libs, library, character.only=T)
 # directory structure
 dirs<- list()
 dirs$data_dir <- "data"
-dirs$raw_dir <- file.path(data_dir, "raw")
-dirs$raw_dir_mtbs <- file.path(raw_dir, "mtbs")
+dirs$raw_dir <- file.path(dirs$data_dir, "raw")
+dirs$raw_dir_mtbs <- file.path(dirs$raw_dir, "mtbs")
 
 lapply(dirs, dir.create)
 

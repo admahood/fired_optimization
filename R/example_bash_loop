@@ -1,0 +1,17 @@
+#!/bin/bash
+for t in 3 4 5 6 7 8 9 10 11 12 13 14 15
+do
+  for s in 2 3 4 5 6 7 8 9
+  do
+    rm /home/firedpy/proj/tables/events/*
+    
+    firedpy -spatial_param $s -temporal_param $t -tiles h09v03 h10v03 h11v03 h10v02 h11v02 h12v02 h13v02 -proj_dir /home/firedpy/proj --shapefile
+    
+    mv /home/firedpy/proj/outputs/shapefiles/modis_events.gpkg /home/firedpy/proj/outputs/shapefiles/modis_events_s"$s"_t"$t".gpkg
+    
+    aws s3 cp /home/firedpy/proj/outputs/shapefiles/modis_events_s"$s"_t"$t".gpkg s3://earthlab-amahood/firedpy_optimization/modis_events_s"$s"_t"$t".gpkg
+    
+    echo "modis_events_s"$s"_t"$t".gpkg DONE AND COPIED"
+    
+  done
+done
