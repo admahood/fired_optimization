@@ -1,6 +1,6 @@
 # Prepping environment
 
-libs <- c("sf", "tidyverse", "units", "lubridate")
+libs <- c("sf", "tidyverse", "units", "lubridate", "doParallel", "foreach")
 lapply(libs, library, character.only=T)
 
 

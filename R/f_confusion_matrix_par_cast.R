@@ -15,8 +15,18 @@
 source("R/env_data_prep.R")
 
 # create function to extract those from the file names
-space <- 5 
-time <- 11
+system(paste("aws s3 sync", s3_url, dirs$raw_dir))
+
+csv_files <- list.files(dirs$raw_dir, pattern=".csv")
+
+
+space <- str_extract_all(csv_files, "s\\d+") %>%
+  str_extract_all("\\d+") %>%
+  unlist %>% unique %>%
+  as.numeric
+time <- str_extract_all(csv_files, "t\\d+") %>%
+  str_extract_all("\\d+") %>%
+  unlist %>% unique %>% as.numeric
 
 e_th <- 202/21.4369 #thresholds in pixels (from hectares)
 w_th <- 404/21.4369
@@ -31,13 +41,14 @@ corz = detectCores()-1
 registerDoParallel(corz)
 
 # setting ss and tt for testing purposes
-SS<-5
-TT<-11
+# SS<-5
+# TT<-11
 
 library(foreach)
 library(doParallel)
 registerDoParallel(detectCores()-1)
 
+# this is using 24G of RAM on 7 cores
 foreach(TT = time) %:% 
   foreach(SS = space)%dopar% {
     
@@ -45,12 +56,14 @@ foreach(TT = time) %:%
     if(!file.exists(bt_fn)){
 
 # 1. import files ==============================================================
-    if(!exists("modis_full")){
-    modis_full <- read_csv("data/modis_events_alaska.csv") %>%
+    modis_fn <- file.path(dirs$raw_dir,
+                          paste0("modis_events_s", SS, "_t", TT, ".csv"))
+    
+    modis_full <- read_csv(modis_fn) %>%
       mutate(year = as.numeric(substr(date, 1,4))) %>%
       distinct(x,y,id, .keep_all = T)%>%
       st_as_sf(coords = c("x","y"), crs = st_crs(proj_modis))
-    }
+
     
     if(!exists("mtbs")){ 
       mtbs <- mtbs_fire %>%
@@ -88,7 +101,7 @@ foreach(TT = time) %:%
       for(y in 1:length(years)){
         # getting the data =====================================================
         modis_y <- modis_full %>%
-          dplyr::select(id,date,x,y) %>%
+          dplyr::select(id,date, year) %>%
           filter(year == years[y])
       
         mtbs_y <- mtbs[mtbs$year == years[y],] %>%
@@ -264,3 +277,8 @@ foreach(TT = time) %:%
   } # ending if(!file.exists(bt_fn))
 }# ending nested foreach loop
 
+final_files <- list.files("data", pattern = ".csv")
+
+for(f in final_files){
+  system(paste("aws s3 cp", f, paste0(s3_url, "/tables/",f)))
+}
