@@ -1,3 +1,6 @@
+# this is an exploratory script I used to extract the tiles needed for alaska.
+# shouldn't be necessary once we fix the projection issues
+
 library(sf)
 library(tidyverse)
 
