@@ -6,16 +6,13 @@
 # 1. break up mtbs multipolygons to eliminate the confounding effect of fire
 #    complexes sometimes being classified as multiple fires, and sometimes being
 #    grouped into a multipolygon
-# 2a. how many modis events are happeing in each mtbs event
-# 2b. how many mtbs event ids occuring within each modis event
-# 2c. how mamny of these events are within the predefined mtbs thresholds
-
-
+# 2a. how many modis events are happening in each mtbs event
+# 2b. how many mtbs event ids occurring within each modis event
+# 2c. how many of these events are within the predefined mtbs thresholds
 
 
 # prepping the environment and adding some libraries and directories -----------
 source("R/env_data_prep.R")
-library(units)
 
 # create function to extract those from the file names
 space <- 5 

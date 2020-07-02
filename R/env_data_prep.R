@@ -1,6 +1,6 @@
 # Prepping environment
 
-libs <- c("sf", "tidyverse")
+libs <- c("sf", "tidyverse", "units", "lubridate")
 lapply(libs, library, character.only=T)
 
 
@@ -14,7 +14,7 @@ lapply(dirs, dir.create)
 
 # urls
 mtbs_url <- "https://edcintl.cr.usgs.gov/downloads/sciweb1/shared/MTBS_Fire/data/composite_data/burned_area_extent_shapefile/mtbs_perimeter_data.zip"
-
+s3_url <- "s3://earthlab-amahood/firedpy_optimization"
 # projections
 proj_modis <- "+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs"
 
