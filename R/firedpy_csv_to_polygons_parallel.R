@@ -43,17 +43,20 @@ doParallel::registerDoParallel(parallel::detectCores())
 
 ids <- unique(df$id)
 
+df_poly <- foreach(i = ids, .combine = rbind) %dopar% {
 
-
-t0 <- Sys.time() # 15 min for creation, 30 secs to write
-df_poly <- df %>%
+# t0 <- Sys.time() # 15 min for creation, 30 secs to write
+x<- df %>%
+  filter(id == i) %>%
   st_as_sf(coords = c("x","y"), crs = crs(template, asText=TRUE)) %>%
-  group_by(id)%>%
-  # adding 1 m to the buffer to ensure things dissolve together nicely
   st_buffer(dist = 1+(res(template)[1]/2), endCapStyle = "SQUARE")%>%
   dplyr::summarize()
-print(Sys.time()-t0)
+ 
+system(paste("echo", i/length(ids)/100))
 
+return(x)
+
+}
 
 st_write(df_poly, output_fn, delete_dsn=TRUE)
 system(paste0("aws s3 cp ",
