@@ -52,7 +52,7 @@ x<- df %>%
   st_buffer(dist = 1+(res(template)[1]/2), endCapStyle = "SQUARE")%>%
   dplyr::summarize()
  
-system(paste("echo", which(ids==i)/length(ids)/100))
+system(paste("echo", round(which(ids==i)/(length(ids)*100),2), "%"))
 
 return(x)
 
