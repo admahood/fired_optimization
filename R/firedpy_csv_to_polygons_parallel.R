@@ -50,7 +50,8 @@ df_poly <- foreach(i = ids, .combine = rbind) %dopar% {
     filter(id == i) %>%
     st_as_sf(coords = c("x","y"), crs = crs(template, asText=TRUE)) %>%
     st_buffer(dist = 1+(res(template)[1]/2), endCapStyle = "SQUARE")%>%
-    dplyr::summarize()
+    dplyr::summarize(first_date_7 = min(date)-7,
+                     last_date_7 = max(date)+7)
   
   system(paste("echo", which(ids==i), "out of", length(ids)))
   
