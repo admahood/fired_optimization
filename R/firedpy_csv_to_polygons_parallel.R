@@ -20,7 +20,7 @@ template_path <- "template/template.tif"
 raw_events_file <- "data/na_fired.csv"
 
 # come up with a descriptive name
-output_fn <- "data/fired_NorthAmerica_s1_t5.gpkg"
+output_fn <- "fired_NorthAmerica_s1_t5.gpkg"
 
 # only requirement here is native modis projection (sinusiodal, 463.something resolution)
 # this is for changing everything into the same projection
@@ -58,8 +58,8 @@ df_poly <- foreach(i = ids, .combine = rbind) %dopar% {
 
 }
 
-st_write(df_poly, output_fn, delete_dsn=TRUE)
+st_write(df_poly, file.path("data", output_fn), delete_dsn=TRUE)
 system(paste0("aws s3 cp ",
-              output_fn,
+              file.path("data",output_fn),
               " s3://earthlab-amahood/", output_fn))
 
