@@ -44,17 +44,17 @@ doParallel::registerDoParallel(parallel::detectCores())
 ids <- unique(df$id)
 
 df_poly <- foreach(i = ids, .combine = rbind) %dopar% {
-
-# t0 <- Sys.time() # 15 min for creation, 30 secs to write
-x<- df %>%
-  filter(id == i) %>%
-  st_as_sf(coords = c("x","y"), crs = crs(template, asText=TRUE)) %>%
-  st_buffer(dist = 1+(res(template)[1]/2), endCapStyle = "SQUARE")%>%
-  dplyr::summarize()
- 
-system(paste("echo", round(which(ids==i)/(length(ids)*100),2), "%"))
-
-return(x)
+  
+  # t0 <- Sys.time() # 15 min for creation, 30 secs to write
+  x<- df %>%
+    filter(id == i) %>%
+    st_as_sf(coords = c("x","y"), crs = crs(template, asText=TRUE)) %>%
+    st_buffer(dist = 1+(res(template)[1]/2), endCapStyle = "SQUARE")%>%
+    dplyr::summarize()
+  
+  system(paste("echo", i, which(ids==i), "of", length(ids)))
+  
+  return(x)
 
 }
 
