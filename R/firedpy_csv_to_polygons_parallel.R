@@ -27,7 +27,7 @@ output_fn <- "data/fired_NorthAmerica_s1_t5.gpkg"
 template <- raster(template_path)
 
 
-# loading in fire event data frame
+# loading in fire event data frame -- doesn't take too long
 df <- read_csv(raw_events_file) %>%
   dplyr::select(id,date,x,y) %>%
   #centering the pixels on the raster cells
@@ -36,6 +36,13 @@ df <- read_csv(raw_events_file) %>%
          year = as.numeric(substr(date, 1,4))) %>%
   # removing about 8000 repeat pixels (i.e. adjacent month detections)
   distinct(x,y,id, .keep_all = T)
+
+# parallel part ================================================================
+
+doParallel::registerDoParallel(parallel::detectCores())
+
+ids <- unique(df$id)
+
 
 
 t0 <- Sys.time() # 15 min for creation, 30 secs to write
