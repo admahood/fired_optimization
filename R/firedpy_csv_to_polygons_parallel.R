@@ -52,7 +52,7 @@ df_poly <- foreach(i = ids, .combine = rbind) %dopar% {
     st_buffer(dist = 1+(res(template)[1]/2), endCapStyle = "SQUARE")%>%
     dplyr::summarize()
   
-  system(paste("echo", i, which(ids==i), "of", length(ids)))
+  system(paste("echo", which(ids==i), "out of", length(ids)))
   
   return(x)
 
