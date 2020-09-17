@@ -1,9 +1,12 @@
-# writing out a firedpy-created .csv to polygons
+# parallel implementation of writing out a firedpy-created .csv to polygons
+
 # this specific application is for an iteration of firedpy for north america
 library(dplyr)
 library(tidyverse)
 library(sf)
 library(raster)
+library(foreach)
+library(doParallel)
 
 # path to a random MCD64 file
 # system("aws s3 cp s3://earthlab-natem/modis-burned-area/MCD64A1/C6/archive_derived_tifs/tif_months/BurnDate_A2000306_h08v04.tif data/template.tif")
