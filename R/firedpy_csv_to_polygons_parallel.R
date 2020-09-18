@@ -16,7 +16,7 @@ template_path <- "template/template.tif"
 
 # path to the output .csv from firedpy
 # default path in firedpy/proj/outputs/tables
-# system("aws s3 cp s3://earthlab-amahood/na_files/tables/fired_events_s1_t5_2020153.csv data/na_fired.csv")
+system("aws s3 cp s3://earthlab-amahood/na_files/tables/fired_events_s1_t5_2020153.csv data/na_fired.csv")
 raw_events_file <- "data/na_fired.csv"
 
 # come up with a descriptive name
@@ -41,25 +41,41 @@ df <- read_csv(raw_events_file) %>%
 
 doParallel::registerDoParallel(parallel::detectCores())
 
-ids <- unique(df$id)
+# ids <- unique(df$id)
 
-df_poly <- foreach(i = ids, .combine = rbind) %dopar% {
+df_grps <- df %>%
+  mutate(grp = cut(id, breaks=300))
+
+grps <- unique(df_grps$grp)
+
+df_poly <- foreach(i = grps) %dopar% {
   
   # t0 <- Sys.time() # 15 min for creation, 30 secs to write
-  x<- df %>%
-    filter(id == i) %>%
+  x<- df_grps %>%
+    filter(grp == i) %>%
+    group_by(id) %>%
     st_as_sf(coords = c("x","y"), crs = crs(template, asText=TRUE)) %>%
     st_buffer(dist = 1+(res(template)[1]/2), endCapStyle = "SQUARE")%>%
     dplyr::summarize(first_date_7 = min(date)-7,
-                     last_date_7 = max(date)+7)
+                     last_date_7 = max(date)+7) 
   
-  system(paste("echo", which(ids==i), "out of", length(ids)))
+  system(paste("echo", which(grps==i), "out of", length(grps)))
   
   return(x)
 
 }
 
-st_write(df_poly, file.path("data", output_fn), delete_dsn=TRUE)
+saveRDS(df_poly, file = "na_list.RDS")
+
+system(paste0("aws s3 cp ",
+              "na_list.RDS",
+              " s3://earthlab-amahood/", "na_list.RDS"))
+
+dfsf<- bind_rows(df_poly) 
+
+st_write(dfsf, file.path("data", output_fn), delete_dsn=TRUE)
+
+# st_write(df_poly, file.path("data", output_fn), delete_dsn=TRUE)
 system(paste0("aws s3 cp ",
               file.path("data",output_fn),
               " s3://earthlab-amahood/", output_fn))
