@@ -1,3 +1,5 @@
+
+# setup ========================================================================
 source("R/a_prep_environment.R")
 source("R/c_import_clean_data.R")
 
@@ -20,10 +22,13 @@ classify_freq <-  function(x) {
 command<- "aws s3 cp"
 source <- "s3://earthlab-natem/modis-burned-area/delineated_events/modis_event_polygons_cus.gpkg"
 dest<- "data/modis/modis_event_polygons_cus.gpkg"
-
 system(paste(command, source, dest))
+
+# doing the things =============================================================
 usa_fired <- st_read("data/modis/modis_event_polygons_cus.gpkg") %>%
-  st_transform(crs = st_crs(fishnet_50k))
+  st_transform(crs = st_crs(fishnet_50k)) %>%
+  mutate(ignition_year = as.numeric(as.character(ignition_year))) %>%
+  filter(ignition_year <= 2016)
 
 
 mtbs_fish <- fishnet_50k %>%
@@ -90,7 +95,7 @@ p1 <- modis_fish_ff %>%
   geom_point(aes(x = long, y = lat, colour = class_freq, size = class_size)) +
   coord_equal() +
   scale_colour_manual(values = rev(brewer.pal(5,"RdYlBu")), 
-                      name = "Fire Frequency") +
+                      name = "Fire Frequency\n(# fires)") +
   scale_size_discrete(range = c(.25, 2.5), name=expression(Burned~Area~(km^2))) +
   theme_nothing(legend = TRUE) +
   theme(plot.title = element_text(hjust = 0, size = 12),
@@ -100,6 +105,7 @@ p1 <- modis_fish_ff %>%
         legend.key = element_rect(fill = "white"),
         legend.position = c(.04,0),
         legend.justification = c(0,0),
+        legend.title = element_text(size=11),
         legend.background = element_rect(fill ="transparent"),
         legend.direction = "vertical",
         legend.box = "horizontal",

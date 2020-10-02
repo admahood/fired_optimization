@@ -61,15 +61,16 @@ p1 <- ggplot(d, aes(modis_ha, mtbs_hectares))+
 
 
 p2 <- ggplot(output_table, aes(max_area, r2)) +
-  geom_hline(yintercept = .80, col="grey20", lty=2)+
+  # geom_hline(yintercept = .80, col="grey20", lty=2)+
   geom_line() +
   #geom_line(aes(y= pred), col="red")+
  # coord_fixed()+
   theme_pubr(base_size = 14) +
-  #ylab(expression(R^2))+
+  # ylab(expression(Variance~Explained~(R^2),face="bold"))+
   ylab("Variance Explained") +
   theme(axis.text = element_text(size = 10)) +
   xlab("MTBS Area (hectares)")+
+  ylim(0,1)+
   scale_x_continuous(labels = comma) +
   theme(axis.title = element_text(face="bold"))#+
   # annotate("text",  x=100000, y=0.4, label = paste("Linear model for every", 
@@ -84,12 +85,13 @@ p3 <- ggplot(output_table, aes(max_area, slope)) +
   theme(axis.text = element_text(size = 10))+
   xlab("MTBS Area (hectares)")+
   scale_x_continuous(labels = comma)+
+  ylim(c(0.5,1.5))+
   ylab("Estimate")+
   theme(axis.title = element_text(face="bold"))
 
 ggarrange(p1, p2, p3, nrow = 1, ncol=3, labels = "AUTO") +
   ggsave("results/draft_figures/figure_2_area_analyse.pdf", dpi = 600, height = 4.5, width = 13)
+
 ggarrange(p1, p2,p3, nrow = 1, ncol=3, labels = "AUTO") +
-  ggsave("images/draft_figures/figure_2_area_analyse.png", dpi = 400, height = 4.5, width = 13,
-        limitsize = T)
+  ggsave("results/draft_figures/figure_2_area_analyse.png",height = 4.5, width = 13, bg="white")
 

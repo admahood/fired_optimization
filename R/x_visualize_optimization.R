@@ -1,5 +1,5 @@
 # visualize results
-
+library(tidyverse)
 # getting results tables for each space-time thing
 command <- "aws s3 sync"
 

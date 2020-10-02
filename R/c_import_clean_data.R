@@ -1,10 +1,12 @@
 # Download and import the Level 4 Ecoregions data, which has Levels 4, 3, 2, 1
 # Download will only happen once as long as the file exists
 if (!exists("states")){
-  url <- "https://www2.census.gov/geo/tiger/GENZ2016/shp/cb_2016_us_state_20m.zip"
-  destfile <- file.path(raw_dir, "cb_2016_us_state_20m.zip")
-  download.file(url=url, destfile = destfile)
-  unzip(zipfile = destfile, exdir = raw_dir_us)
+  if(!file.exists(file.path(raw_dir_us, "cb_2016_us_state_20m.shp"))){
+    url <- "https://www2.census.gov/geo/tiger/GENZ2016/shp/cb_2016_us_state_20m.zip"
+    destfile <- file.path(raw_dir, "cb_2016_us_state_20m.zip")
+    download.file(url=url, destfile = destfile)
+    unzip(zipfile = destfile, exdir = raw_dir_us)
+    }
   states <- st_read(raw_dir_us) %>%
     sf::st_transform(p4string_ea) %>%
     dplyr::filter(!STUSPS %in% c("HI", "AK", "PR"))
